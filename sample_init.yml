@@ -1,0 +1,48 @@
+grids: # Default grid is 0 and is alwyas SCALAR.
+  1:
+    rank: 2
+    shape: [3,2]
+
+variables:
+  mm_h_rate:
+    input: True
+    type: double
+    units: "mm/h"
+    expression: >
+      mm_h_rate.value
+  mm_accum:
+    output: True
+    type: double
+    units: "mm"
+    expression: >
+      mm_h_rate.value * (time.last_update_delta / 3600.0)
+
+  mm_h_rate_grid:
+    input: True
+    type: double
+    units: "mm/h"
+    grid: 1
+    expression: >
+      mm_h_rate_grid.value
+  mm_accum_grid:
+    output: True
+    type: double
+    units: "mm"
+    grid: 1
+    expression: >
+      mm_h_rate_grid.value * (time.last_update_delta / 3600.0)
+
+  mm_h_rate_grid_from_scalar:
+    input: True
+    type: double
+    units: "mm/h"
+    grid: 1
+    expression: >
+      mm_h_rate.value
+  mm_accum_grid_from_scalar:
+    output: True
+    type: double
+    units: "mm"
+    grid: 1
+    expression: >
+      mm_h_rate.value * (time.last_update_delta / 3600.0)
