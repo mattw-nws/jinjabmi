@@ -1,6 +1,7 @@
 # This is needed for get_var_bytes
 from pathlib import Path
 import sys
+import re
 
 # import data_tools
 # Basic utilities
@@ -18,8 +19,6 @@ from jinja2 import Environment, BaseLoader
 
 from bmipy_util import GridType, Location, BmiMetadata, VarType, Grid
 
-
-
 class Jinja(Bmi):
     _start_time = None
     _end_time = None
@@ -34,6 +33,9 @@ class Jinja(Bmi):
         GridType.UNIFORM_RECTILINEAR,
         GridType.STRUCTURED_QUADRILATERAL
     ]
+    _convention_variable_prefix = ''
+    _has_updated = False
+    _convention_regexes = {}
 
     def __init__(self):
         """Create a model that is ready for initialization."""
@@ -48,6 +50,12 @@ class Jinja(Bmi):
 
         #TODO: change to SandboxedEnvironment once we get a minimal working example.
         self.environment = Environment(loader=BaseLoader, trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=False, enable_async=False)
+
+        self._convention_regexes = {
+            "grid_shape": re.compile(self._convention_variable_prefix + 'grid_(\d+)_shape'),
+            "grid_spacing": re.compile(self._convention_variable_prefix + 'grid_(\d+)_spacing'),
+            "grid_origin": re.compile(self._convention_variable_prefix + 'grid_(\d+)_origin')
+        }
 
     _current_time = 0
 
@@ -197,6 +205,52 @@ class Jinja(Bmi):
         #print(self._vars[var_name])
         return var_data["value"]
 
+    def _handle_set_convention_variable(self, var_name: str, value) -> bool:
+        if self._has_updated:
+            # Don't handle any convention variables after update or update_until is called the first time.
+            return False
+
+        m = re.fullmatch(self._convention_regexes["grid_shape"], var_name)
+        if m is not None:
+            grid_id = int(m.group(1))
+            grid = self._get_grid_data(grid_id)
+            if len(value) != grid.rank:
+                raise Exception(f"jinjabmi: Grid shape array must be of the length \"rank\" which is {grid.rank} (got {len(value)})")
+            shp_a = np.array(value)
+            shp_t = tuple(value)
+            grid.shape = shp_a
+            # Go through all the variables that use this grid and re-init them!
+            for key, var_data in self._vars.items():
+                if "bmi_meta" not in var_data:
+                    continue
+                if var_data["bmi_meta"].grid == grid_id:
+                    #if "value" in var_data:
+                        #TODO: do something with any existing value?
+                        #var_data["value"] = values.copy()
+                    var_data["value"] = np.zeros(shp_t)
+            return True
+
+        m = re.fullmatch(self._convention_regexes["grid_origin"], var_name)
+        if m is not None:
+            grid_id = int(m.group(1))
+            grid = self._get_grid_data(grid_id)
+            if len(value) != grid.rank:
+                raise Exception(f"jinjabmi: Grid origin array must be of the length \"rank\" which is {grid.rank} (got {len(value)})")
+            grid.origin = value
+            return True
+
+        m = re.fullmatch(self._convention_regexes["grid_spacing"], var_name)
+        if m is not None:
+            grid_id = int(m.group(1))
+            grid = self._get_grid_data(grid_id)
+            if len(value) != grid.rank:
+                raise Exception(f"jinjabmi: Grid spacing array must be of the length \"rank\" which is {grid.rank} (got {len(value)})")
+            grid.spacing = value
+            return True
+        
+        return False
+    
+
     #------------------------------------------------------------
     #------------------------------------------------------------
     # BMI: Model Control Functions
@@ -244,6 +298,7 @@ class Jinja(Bmi):
         future_time : float
             The future time to when the model should be advanced.
         """
+        self._has_updated = True
         update_delta_t = future_time - self._current_time 
         self._vars["time"]["current_time"] = future_time
         self._vars["time"]["last_update_delta"] = update_delta_t
@@ -393,6 +448,9 @@ class Jinja(Bmi):
         values : np.ndarray
               Array of new values.
         """ 
+        if self._handle_set_convention_variable(var_name, values):
+            return
+
         var_data = self._get_var_data(var_name)
         if "value" not in var_data:
             #var_data["value"] = values.copy()
