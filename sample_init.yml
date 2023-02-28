@@ -5,6 +5,7 @@ grids: # Default grid is 0 and is always `scalar`.
 
 variables:
   mm_h_rate:
+    init: 5
     input: True
     type: double
     units: "mm/h"
@@ -18,6 +19,11 @@ variables:
       mm_h_rate.value * (time.last_update_delta / 3600.0)
 
   mm_h_rate_grid:
+    init:
+      seed: 42
+      range: [0,12]
+      stddev: 2
+      mean: 5
     input: True
     type: double
     units: "mm/h"
@@ -33,7 +39,7 @@ variables:
       mm_h_rate_grid.value * (time.last_update_delta / 3600.0)
 
   mm_h_rate_grid_from_scalar:
-    input: True
+    input: False
     type: double
     units: "mm/h"
     grid: 1

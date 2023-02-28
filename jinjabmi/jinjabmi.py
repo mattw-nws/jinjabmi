@@ -143,6 +143,8 @@ class Jinja(Bmi):
             var["bmi_meta"] = bmi_meta
             var["template"] = self.environment.from_string(var_cfg["template"]) if "template" in var_cfg else None
             var["expression"] = self.environment.compile_expression(var_cfg["expression"], undefined_to_none=False) if "expression" in var_cfg else None
+            if "init" in var_cfg:
+                var["init"] = var_cfg["init"]
             if bmi_meta.is_input :
                 self._input_var_names.append(key)
             if bmi_meta.is_output :
@@ -167,16 +169,58 @@ class Jinja(Bmi):
         if var_name not in self._vars:
             raise KeyError(f"jinjabmi: Variable {var_name} is not configured.")
         var_data = self._vars[var_name]
+
+        # Lazy initialization...
         if "value" not in var_data:
-            typ = var_data["bmi_meta"].vartype.get_numpy_dtype()
-            var_grid = self._get_grid_data(var_data["bmi_meta"].grid)
-            if var_grid.type == GridType.SCALAR:
-                self._vars[var_name]["value"] = np.zeros((1), typ)
-            else:
-                #FIXME: This is currently assumed to work under unstructured grids also, though
-                # get_grid_shape is technically only for structured grids...?
-                self._vars[var_name]["value"] = np.zeros(var_grid.shape, typ)
+            self._initialize_var(var_data)
+
         return var_data
+    
+    def _initialize_var(self, var_data):
+        typ = var_data["bmi_meta"].vartype.get_numpy_dtype()
+        var_grid = self._get_grid_data(var_data["bmi_meta"].grid)
+        if var_grid.type == GridType.SCALAR:
+            var_data["value"] = np.zeros((1), typ)
+        else:
+            #FIXME: This is currently assumed to work under unstructured grids also, though
+            # get_grid_shape is technically only for structured grids...?
+            var_data["value"] = np.zeros(var_grid.shape, typ)
+
+        if "init" in var_data:
+            init_data = var_data["init"]
+            v = var_data["value"]
+            if isinstance(init_data, int) or isinstance(init_data, float):
+                v[:] = init_data
+                return
+                
+            #TODO: This section could use some more validation/user feedback.
+            shp = v.shape
+            v = v.flatten()
+            rng = np.random.default_rng(seed=init_data.get("seed", None))
+
+            range = init_data.get("range", None)
+            stddev = init_data.get("stddev", None)
+            if range is not None:
+                try: 
+                    range = np.array(range, dtype=float)
+                except:
+                    raise Exception("jinjabmi: init.range was specified but was not an array of two numbers (got \"{range}\")")
+
+            if stddev is not None:
+                # Doing a very naive truncated normal distribution. Better options out there.
+                stddev = float(init_data["stddev"])
+                maxiter = 100
+                i = 0
+                indices = (np.array([i[0] for i in np.ndindex(v.shape)]),) #can probably initialize to "all" smarter?
+                while len(indices[0]) > 0 and i <= maxiter:
+                    i += 1
+                    mean = float(var_data["init"].get("mean", 0 if range is None else (range[0]+range[1])/2 ))
+                    v[indices] = rng.normal(mean, stddev, size=indices[0].shape)
+                    if range is not None:
+                        indices = np.where(np.logical_or(v < range[0], v > range[1]))
+            else:
+                v[:] = rng.uniform(low=range[0], high=range[1], size=v.shape)
+            var_data["value"] = v.reshape(shp)
 
     def _get_var_grid_data(self, var_name):
         var_data = self._get_var_data(var_name)
@@ -234,7 +278,7 @@ class Jinja(Bmi):
                     #if "value" in var_data:
                         #TODO: do something with any existing value?
                         #var_data["value"] = values.copy()
-                    var_data["value"] = np.zeros(shp_t)
+                    self._initialize_var(var_data)
             return True
 
         m = re.fullmatch(self._convention_regexes["grid_origin"], var_name)
