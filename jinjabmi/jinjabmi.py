@@ -35,11 +35,20 @@ class Jinja(Bmi):
     ]
     _convention_variable_prefix = ''
     _has_updated = False
-    _convention_regexes = {}
+
+    # Consider making this static in the future, once the naming confvention is firmed up.
+    _convention_regexes = None 
 
     def __init__(self):
         """Create a model that is ready for initialization."""
         super(Jinja, self).__init__()
+
+        self._vars = {}
+        self._grids = {
+            0: Grid(0, 0, GridType.SCALAR)
+        }
+        self._input_var_names = []
+        self._output_var_names = []
 
         self._bmi_type_map = {}
         for t in VarType:
@@ -62,21 +71,19 @@ class Jinja(Bmi):
     #---------------------------------------------
     # Variables state/metadata store
     #---------------------------------------------
-    _vars = {}
+    _vars = None
 
-    _grids = {
-        0: Grid(0, 0, GridType.SCALAR)
-    }
+    _grids = None
 
     #---------------------------------------------
     # Input variables
     #---------------------------------------------
-    _input_var_names = []
+    _input_var_names = None
 
     #---------------------------------------------
     # Output variables
     #---------------------------------------------
-    _output_var_names = []
+    _output_var_names = None
 
     
     #------------------------------------------------------------ 
