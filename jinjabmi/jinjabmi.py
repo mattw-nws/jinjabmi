@@ -532,17 +532,17 @@ class Jinja(Bmi):
         return grid_data.type.value
     
     #------------------------------------------------------------ 
-    def get_grid_x(self, x_out, grid_id):
+    def get_grid_x(self, grid_id, x_out):
         grid_data = self._get_grid_data(grid_id)
         x_out[:] = grid_data.grid_x
 
     #------------------------------------------------------------ 
-    def get_grid_y(self, y_out, grid_id):
+    def get_grid_y(self, grid_id, y_out):
         grid_data = self._get_grid_data(grid_id)
         y_out[:] = grid_data.grid_y
 
     #------------------------------------------------------------ 
-    def get_grid_z(self, z_out, grid_id):
+    def get_grid_z(self, grid_id, z_out):
         grid_data = self._get_grid_data(grid_id)
         z_out[:] = grid_data.grid_z
 

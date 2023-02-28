@@ -1,4 +1,4 @@
-grids: # Default grid is 0 and is alwyas SCALAR.
+grids: # Default grid is 0 and is always `scalar`.
   1:
     rank: 2
     shape: [3,2]
