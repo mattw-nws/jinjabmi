@@ -142,7 +142,8 @@ class Jinja(Bmi):
             )
             var["bmi_meta"] = bmi_meta
             var["template"] = self.environment.from_string(var_cfg["template"]) if "template" in var_cfg else None
-            var["expression"] = self.environment.compile_expression(var_cfg["expression"], undefined_to_none=False) if "expression" in var_cfg else None
+            if "expression" in var_cfg:
+                var["expression"] = self.environment.compile_expression(var_cfg["expression"], undefined_to_none=False) if "expression" in var_cfg else None
             if "init" in var_cfg:
                 var["init"] = var_cfg["init"]
             if bmi_meta.is_input :
@@ -415,12 +416,13 @@ class Jinja(Bmi):
         """
         var_data = self._get_var_data(var_name)
         
-        #var_data["value"][:] = self._evaluate_var_expression(var_name)
-        # not sure why the below gymnastics are necessary, but broadcasting 
-        # wasn't working with the above.
-        v = var_data["value"] 
-        v[:] = self._evaluate_var_expression(var_name)
-        var_data["value"] = v
+        if "expression" in var_data:
+            #var_data["value"][:] = self._evaluate_var_expression(var_name)
+            # not sure why the below gymnastics are necessary, but broadcasting 
+            # wasn't working with the above.
+            v = var_data["value"]
+            v[:] = self._evaluate_var_expression(var_name)
+            var_data["value"] = v
         
         #return self._vars[var_name]["value"]
         return var_data["value"]
