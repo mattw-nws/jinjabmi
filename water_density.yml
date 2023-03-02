@@ -21,7 +21,7 @@ variables:
     expression: >
       precip_mass_per_area_input.value
 
-  water_density_rho: # can't be reused by other templates...yet.
+  water_density_rho:
     output: True
     type: double
     expression: >
