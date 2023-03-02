@@ -1,0 +1,40 @@
+library:
+  constants:
+    stefan_boltzmann: 0.567e-8
+  functions:
+    timestep_accum: &timestep_accum
+      output: True
+      type: double
+      expression: >
+        {~rate_var~}.value * (time.last_update_delta / 3600.0)
+
+variables:
+  mm_h_rate_1:
+    init: 5
+    input: True
+    type: double
+    units: "mm/h"
+
+  mm_h_rate_2:
+    init: 7
+    input: True
+    type: double
+    units: "mm/h"
+
+  mm_accum_1:
+    <<: *timestep_accum
+    units: "mm"
+    substitutions:
+      rate_var: mm_h_rate_1
+
+  mm_accum_2:
+    <<: *timestep_accum
+    units: "mm"
+    substitutions:
+      rate_var: mm_h_rate_2
+
+  sbc:
+    output: True
+    type: double
+    expression:
+      constants.stefan_boltzmann    
