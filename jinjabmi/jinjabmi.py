@@ -105,7 +105,11 @@ class Jinja(Bmi):
     #------------------------------------------------------------ 
 
     def _parse_config(self, cfg):
-        for key, val in cfg["grids"].items():
+        if "library" in cfg:
+            #TODO some validation here, probably.
+            self._vars["constants"] = cfg["library"].get("constants", {})
+
+        for key, val in cfg.get("grids", {}).items():
             grid_cfg = val
             if "rank" not in grid_cfg:
                 raise Exception("jinjabmi: The key ""rank"" is required for any defined grid.")
@@ -153,16 +157,22 @@ class Jinja(Bmi):
                 grid = var_cfg.get("grid", 0)
             )
             var["bmi_meta"] = bmi_meta
-            var["template"] = self.environment.from_string(var_cfg["template"]) if "template" in var_cfg else None
-            if "expression" in var_cfg:
-                var["expression"] = var_cfg["expression"]
-                var["expression_callable"] = self.environment.compile_expression(var_cfg["expression"], undefined_to_none=False)
             if "init" in var_cfg:
                 var["init"] = var_cfg["init"]
             if bmi_meta.is_input :
                 self._input_var_names.append(key)
             if bmi_meta.is_output :
                 self._output_var_names.append(key)
+            #var["template"] = self.environment.from_string(var_cfg["template"]) if "template" in var_cfg else None
+            if "expression" in var_cfg:
+                expr = var_cfg["expression"]
+                for sub_k,sub_v in var_cfg.get("substitutions", {}).items():
+                    expr = re.sub('\{~\s*' + re.escape(sub_k) + '\s*~\}', re.escape(sub_v), expr)
+                var["expression"] = expr
+                var["expression_callable"] = self.environment.compile_expression(expr, undefined_to_none=False)
+            else:
+                #print(f"initializing var {key}")
+                self._initialize_var(var)
 
         # Once initial parse of variables is complete, make a pass to determine dependencies...
         for var_name, var_data in self._vars.items():
