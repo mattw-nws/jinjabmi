@@ -14,8 +14,8 @@ import yaml
 from bmipy import Bmi
 from enum import Enum
 
-#import jinja2 as jinja
-from jinja2 import Environment, BaseLoader
+import jinja2
+from jinja2 import Environment, BaseLoader, meta
 
 from bmipy_util import GridType, Location, BmiMetadata, VarType, Grid
 
@@ -143,7 +143,8 @@ class Jinja(Bmi):
             var["bmi_meta"] = bmi_meta
             var["template"] = self.environment.from_string(var_cfg["template"]) if "template" in var_cfg else None
             if "expression" in var_cfg:
-                var["expression"] = self.environment.compile_expression(var_cfg["expression"], undefined_to_none=False) if "expression" in var_cfg else None
+                var["expression"] = var_cfg["expression"]
+                var["expression_callable"] = self.environment.compile_expression(var_cfg["expression"], undefined_to_none=False)
             if "init" in var_cfg:
                 var["init"] = var_cfg["init"]
             if bmi_meta.is_input :
@@ -151,14 +152,39 @@ class Jinja(Bmi):
             if bmi_meta.is_output :
                 self._output_var_names.append(key)
 
-        #default_grid_id = 0
-        #for key, var in self._vars.items():
-        #    if "bmi_meta" not in var: # e.g. "time"
-        #        continue
-        #    bmi_meta = var["bmi_meta"]
-        #    if bmi_meta.grid is None:
-        #        default_grid_id += 1
-        #        bmi_meta.grid = default_grid_id
+        # Once initial parse of variables is complete, make a pass to determine dependencies...
+        for var_name, var_data in self._vars.items():
+            if "expression" not in var_data:
+                continue
+            ast = self.environment.parse("{{" + var_data["expression"] + "}}")
+            deps = jinja2.meta.find_undeclared_variables(ast)
+            var_data["depends"] = set()
+            for dep in deps:
+                if dep == var_name:
+                    continue
+                dep_data = self._vars.get(dep, None)
+                #TODO: Throw something if missing?
+                if dep_data is None or "expression" not in dep_data:
+                    continue
+                var_data["depends"].add(dep)
+        # Now make a pass to check for cycles...
+        #from pprint import pprint
+        depbags = { k:v["depends"].copy() for k,v in self._vars.items() if "depends" in v }
+        nonend = { k:v for k,v in depbags.items() if len(v) > 0}
+        #pprint(nonend)
+        while True:
+            lastnonendcount = len(nonend)
+            for k in nonend:
+                nonend[k] = { d for d in nonend[k] if d in nonend }
+                #print(f"    {k} : {nonend[k]=}")
+            nonend = { k:v for k,v in nonend.items() if len(v) > 0}
+            #pprint(nonend)
+            #print(f" {len(nonend)=} {lastnonendcount=}")
+            if len(nonend) == 0 or lastnonendcount == len(nonend):
+                break
+        if len(nonend) > 0:
+            raise Exception(f"jinjabmi: Cycle in dependencies for one or more variables!")
+
 
         self._start_time = cfg.get("start_time", 0)
         self._end_time = cfg.get("end_time", sys.maxsize)
@@ -233,28 +259,18 @@ class Jinja(Bmi):
         return self._grids[grid_id]
 
     def _evaluate_var_expression(self, var_name):
-        #self.get_value(str) #will update _vars[var_name]["value"]
-        #FIXME: Make sure it exists first!!
         var_data = self._get_var_data(var_name)
-        expr = var_data["expression"]
+        expr = var_data["expression_callable"]
         context = self._vars
+
+        # ensure evaluate dependencies... (note: cycle checking should have already been done!)
+        for dep_name in var_data["depends"]:
+            self._evaluate_var_expression(dep_name)
 
         #TODO: Avoid evaluating the expression more than once per timestep?
 
-        #temporary debugging override...
-        #expr = self.environment.compile_expression("mm_h_rate.value")
-        #context = {"mm_h_rate": {"value": np.array([42,43])}}
 
-        #print(expr)
-        #print(self._vars[var_name])
-        #print("context:")
-        #print(context)
-        #print("expr(context):")
-        #print(expr(context))
-        #print("assiging...")
-        var_data["value"] = expr(context)
-        #print("self._vars[var_name]:")
-        #print(self._vars[var_name])
+        var_data["value"][:] = expr(context)
         return var_data["value"]
 
     def _handle_set_convention_variable(self, var_name: str, value) -> bool:
@@ -417,12 +433,8 @@ class Jinja(Bmi):
         var_data = self._get_var_data(var_name)
         
         if "expression" in var_data:
-            #var_data["value"][:] = self._evaluate_var_expression(var_name)
-            # not sure why the below gymnastics are necessary, but broadcasting 
-            # wasn't working with the above.
-            v = var_data["value"]
-            v[:] = self._evaluate_var_expression(var_name)
-            var_data["value"] = v
+            # the below call mutates var_data["value"]...
+            self._evaluate_var_expression(var_name)
         
         #return self._vars[var_name]["value"]
         return var_data["value"]

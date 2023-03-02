@@ -1,0 +1,72 @@
+grids: # Default grid is 0 and is always `scalar`.
+  1:
+    rank: 2
+    shape: [3,3]
+
+variables:
+  precip_depth_input:
+    input: True
+    type: double
+    units: "m"
+
+  water_temp:
+    input: True
+    type: double
+    units: "degC"
+
+  precip_mass_per_area_input:
+    input: True
+    type: double
+    units: "kg m^-2"
+    expression: >
+      precip_mass_per_area_input.value
+
+  water_density_rho: # can't be reused by other templates...yet.
+    output: True
+    type: double
+    expression: >
+      999.99399 + 0.04216485*water_temp.value - 0.007097451*(water_temp.value**2) + 0.00003509571*(water_temp.value**3) - 9.9037785E-8*(water_temp.value**4)
+
+  precip_mass_per_area_output:
+    output: True
+    type: double
+    units: "kg m^-2"
+    expression: >
+      precip_depth_input.value * water_density_rho.value
+
+  precip_depth_output:
+    output: True
+    type: double
+    units: "m"
+    expression: >
+      precip_mass_per_area_input.value / water_density_rho.value
+
+  precip_mass_per_area_output_rate:
+    output: True
+    type: double
+    units: "kg m^-2 h^-1"
+    expression: >
+      precip_mass_per_area_output.value / (time.last_update_delta / 3600.0)
+
+  precip_depth_output_rate:
+    output: True
+    type: double
+    units: "mm/h"
+    expression: >
+      precip_depth_output.value / (time.last_update_delta / 3600.0)
+
+  precip_mass_per_area_output_rate_on_grid:
+    output: True
+    type: double
+    grid: 1
+    units: "kg m^-2 h^-1"
+    expression: >
+      precip_mass_per_area_output_rate.value
+
+  precip_depth_output_rate_on_grid:
+    output: True
+    type: double
+    grid: 1
+    units: "mm/h"
+    expression: >
+      precip_depth_output_rate.value
