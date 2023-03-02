@@ -10,6 +10,9 @@ import pandas as pd
 # Configuration file functionality
 import yaml
 
+# Math functions
+import math
+
 # Need these for BMI
 from bmipy import Bmi
 from enum import Enum
@@ -59,6 +62,9 @@ class Jinja(Bmi):
 
         #TODO: change to SandboxedEnvironment once we get a minimal working example.
         self.environment = Environment(loader=BaseLoader, trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=False, enable_async=False)
+
+        self.environment.filters["cos"] = math.cos
+        self.environment.filters["sin"] = math.sin
 
         self._convention_regexes = {
             "grid_shape": re.compile(self._convention_variable_prefix + 'grid_(\d+)_shape'),
