@@ -19,11 +19,11 @@ variables:
     type: double
     units: "m/s"
     expression: >
-      wind_speed_input.value * ((3.141592653589793/180 * wind_direction_input.value)|cos)
+      wind_speed_input.value * ((math.pi/180 * wind_direction_input.value)|cos)
 
   vector_wind_vv_output:
     output: True
     type: double
     units: "m/s"
     expression: >
-      wind_speed_input.value * ((3.141592653589793/180 * wind_direction_input.value)|sin)
+      wind_speed_input.value * ((math.pi/180 * wind_direction_input.value)|sin)

@@ -46,7 +46,13 @@ class Jinja(Bmi):
         """Create a model that is ready for initialization."""
         super(Jinja, self).__init__()
 
-        self._vars = {}
+        self._vars = {
+            "math": {
+                "pi": np.pi,
+                "e": np.e,
+                "euler_gamma": np.euler_gamma
+            }
+        }
         self._grids = {
             0: Grid(0, 0, GridType.SCALAR)
         }
