@@ -3,11 +3,14 @@ from pathlib import Path
 import sys
 import re
 
+from copy import deepcopy
+
 # import data_tools
 # Basic utilities
 import numpy as np
 import pandas as pd
 # Configuration file functionality
+import os
 import yaml
 
 # Math functions
@@ -29,6 +32,7 @@ class Jinja(Bmi):
     _time_step = None
     _time_units = None
     _vars = None
+    _recipes = None
     _bmi_type_map = None
     _bmi_grid_type_map = None
     _structured_grid_types = [
@@ -109,6 +113,8 @@ class Jinja(Bmi):
             #TODO some validation here, probably.
             self._vars["constants"] = cfg["library"].get("constants", {})
 
+            self._recipes = cfg["library"].get("recipes", {})
+
         for key, val in cfg.get("grids", {}).items():
             grid_cfg = val
             if "rank" not in grid_cfg:
@@ -147,6 +153,13 @@ class Jinja(Bmi):
 
         for key, val in cfg["variables"].items():
             var_cfg = val
+            if "recipe" in var_cfg and "name" in var_cfg["recipe"]:
+                recipe_name = var_cfg["recipe"]["name"]
+                if recipe_name not in self._recipes:
+                    raise KeyError(f"jinjabmi: Unknown recipe \"{recipe_name}\" in variable \"{key}\"")
+                recipe_copy = deepcopy(self._recipes[recipe_name]) #deep just to be safe
+                recipe_copy.update(var_cfg) #update is shallow, granted.
+                var_cfg = recipe_copy
             var = {}
             self._vars[key] = var
             bmi_meta = BmiMetadata(
@@ -166,7 +179,8 @@ class Jinja(Bmi):
             #var["template"] = self.environment.from_string(var_cfg["template"]) if "template" in var_cfg else None
             if "expression" in var_cfg:
                 expr = var_cfg["expression"]
-                for sub_k,sub_v in var_cfg.get("substitutions", {}).items():
+                subs = var_cfg.get("recipe", {}).get("substitutions", {}).items()
+                for sub_k,sub_v in subs:
                     expr = re.sub('\{~\s*' + re.escape(sub_k) + '\s*~\}', re.escape(sub_v), expr)
                 var["expression"] = expr
                 var["expression_callable"] = self.environment.compile_expression(expr, undefined_to_none=False)
@@ -360,7 +374,20 @@ class Jinja(Bmi):
             raise RuntimeError("No configuration provided, nothing to do...")
 
         with bmi_cfg_file.open('r') as fp:
-            cfg_yaml = yaml.safe_load(fp)
+            #cfg_yaml = yaml.safe_load(fp)
+            
+            #adapted from https://stackoverflow.com/a/9577670/489116 and elsewhere
+            #cfg_yaml = yaml.load(fp, Loader=IncludeLoader)
+            #loader = IncludeLoader(fp)
+            #cfg_yaml = loader
+            loader_class = yaml.SafeLoader
+            def yaml_include(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode):
+                root = os.path.split(fp.name)[0]
+                filename = os.path.join(root, loader.construct_scalar(node))
+                with open(filename, 'r') as f:
+                    return yaml.load(f, loader_class)
+            loader_class.add_constructor('!include', yaml_include)
+            cfg_yaml = yaml.load(fp, Loader=loader_class)
             
         self.cfg = self._parse_config(cfg_yaml)
 

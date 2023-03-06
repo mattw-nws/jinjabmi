@@ -1,0 +1,8 @@
+constants:
+  stefan_boltzmann: 0.567e-8
+recipes:
+  timestep_accum: &timestep_accum # anchors/aliases don't work when included!
+    output: True
+    type: double
+    expression: >
+      {~rate_var~}.value * (time.last_update_delta / 3600.0)

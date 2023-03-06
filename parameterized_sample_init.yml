@@ -1,12 +1,11 @@
-library:
-  constants:
-    stefan_boltzmann: 0.567e-8
-  functions:
-    timestep_accum: &timestep_accum
-      output: True
-      type: double
-      expression: >
-        {~rate_var~}.value * (time.last_update_delta / 3600.0)
+library:  !include sample_library.yml
+
+# You could do "recipes" with anchors, omitting `name`, it will work the same...in a single file!
+#timestep_accum: &timestep_accum
+#  output: True
+#  type: double
+#  expression: >
+#    {~rate_var~}.value * (time.last_update_delta / 3600.0)
 
 variables:
   mm_h_rate_1:
@@ -22,16 +21,21 @@ variables:
     units: "mm/h"
 
   mm_accum_1:
-    <<: *timestep_accum
+    #<<: *timestep_accum
     units: "mm"
-    substitutions:
-      rate_var: mm_h_rate_1
+    recipe:
+      # recipe name and `recipes` in the library file is necessary when using !include ...
+      name: timestep_accum 
+      substitutions:
+        rate_var: mm_h_rate_1
 
   mm_accum_2:
-    <<: *timestep_accum
+    #<<: *timestep_accum
     units: "mm"
-    substitutions:
-      rate_var: mm_h_rate_2
+    recipe:
+      name: timestep_accum
+      substitutions:
+        rate_var: mm_h_rate_2
 
   sbc:
     output: True
