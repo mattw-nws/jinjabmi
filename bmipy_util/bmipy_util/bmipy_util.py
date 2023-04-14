@@ -22,15 +22,15 @@ class Location(Enum):
 
 _vartype_numpy_dtype_map = None # Can't be a member or would become one of the Enum values!
 class VarType(Enum):
-    DOUBLE = "double"
-    INT = "int"
-    FLOAT = "float"
+    DOUBLE = "float64"
+    INT = "int32"
+    FLOAT = "float32"
 
     def get_numpy_dtype(self) -> np.dtype:
         return _vartype_numpy_dtype_map[self]
 
 _vartype_numpy_dtype_map = {
-    VarType.DOUBLE: np.double,
+    VarType.DOUBLE: np.float64,
     VarType.INT: np.int32,
     VarType.FLOAT: np.float32
 }
