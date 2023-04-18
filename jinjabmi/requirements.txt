@@ -1,5 +1,0 @@
-pyyaml
-numpy
-bmipy
-bmipy_util
-jinja2
