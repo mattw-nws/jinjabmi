@@ -631,39 +631,7 @@ class Jinja(Bmi):
         dest[:] = v[np.unravel_index(indices, v.shape)]
         return
 
-    # JG Note: remaining grid funcs do not apply for type 'scalar'
-    #   Yet all functions in the BMI must be implemented 
-    #   See https://bmi.readthedocs.io/en/latest/bmi.best_practices.html          
-    #------------------------------------------------------------ 
-    def get_grid_edge_count(self, grid_id):
-        #grid_data = self._get_grid_data(grid_id)
-        #return(grid_data.?)
-        raise NotImplementedError("get_grid_edge_count")
 
-    #------------------------------------------------------------ 
-    def get_grid_edge_nodes(self, grid_id, edge_nodes):
-        raise NotImplementedError("get_grid_edge_nodes")
-
-    #------------------------------------------------------------ 
-    def get_grid_face_count(self, grid_id):
-        raise NotImplementedError("get_grid_face_count")
-    
-    #------------------------------------------------------------ 
-    def get_grid_face_edges(self, grid_id, face_edges):
-        raise NotImplementedError("get_grid_face_edges")
-
-    #------------------------------------------------------------ 
-    def get_grid_face_nodes(self, grid_id, face_nodes):
-        raise NotImplementedError("get_grid_face_nodes")
-    
-    #------------------------------------------------------------
-    def get_grid_node_count(self, grid_id):
-        raise NotImplementedError("get_grid_node_count")
-
-    #------------------------------------------------------------ 
-    def get_grid_nodes_per_face(self, grid_id, nodes_per_face):
-        raise NotImplementedError("get_grid_nodes_per_face") 
-    
     #------------------------------------------------------------ 
     def get_grid_origin(self, grid_id, origin):
         grid_data = self._get_grid_data(grid_id)
@@ -718,4 +686,37 @@ class Jinja(Bmi):
         grid_data = self._get_grid_data(grid_id)
         z_out[:] = grid_data.grid_z
 
+    # Remaining grid funcs do not apply for scalar or structured grids
+    #   Yet all functions in the BMI must be implemented 
+    #   See https://bmi.readthedocs.io/en/latest/bmi.best_practices.html          
+    #------------------------------------------------------------ 
+    def get_grid_edge_count(self, grid_id):
+        #grid_data = self._get_grid_data(grid_id)
+        #return(grid_data.?)
+        raise NotImplementedError("get_grid_edge_count")
+
+    #------------------------------------------------------------ 
+    def get_grid_edge_nodes(self, grid_id, edge_nodes):
+        raise NotImplementedError("get_grid_edge_nodes")
+
+    #------------------------------------------------------------ 
+    def get_grid_face_count(self, grid_id):
+        raise NotImplementedError("get_grid_face_count")
+    
+    #------------------------------------------------------------ 
+    def get_grid_face_edges(self, grid_id, face_edges):
+        raise NotImplementedError("get_grid_face_edges")
+
+    #------------------------------------------------------------ 
+    def get_grid_face_nodes(self, grid_id, face_nodes):
+        raise NotImplementedError("get_grid_face_nodes")
+    
+    #------------------------------------------------------------
+    def get_grid_node_count(self, grid_id):
+        raise NotImplementedError("get_grid_node_count")
+
+    #------------------------------------------------------------ 
+    def get_grid_nodes_per_face(self, grid_id, nodes_per_face):
+        raise NotImplementedError("get_grid_nodes_per_face") 
+    
 
