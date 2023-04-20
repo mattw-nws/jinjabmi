@@ -165,7 +165,7 @@ class Jinja(Bmi):
             bmi_meta = BmiMetadata(
                 is_input = var_cfg.get("input", False),
                 is_output = var_cfg.get("output", False),
-                vartype = self._bmi_type_map.get(var_cfg.get("type", "double"), VarType.DOUBLE),
+                vartype = self._bmi_type_map.get(var_cfg.get("type", "float64"), VarType.DOUBLE),
                 units = var_cfg.get("units", '1'),
                 grid = var_cfg.get("grid", 0)
             )
@@ -480,6 +480,8 @@ class Jinja(Bmi):
             Value array.
         """
         var_data = self._get_var_data(var_name)
+        #with open("jinjabmi.log", "a") as f:
+        #    f.write(f"  get_value_ptr({var_name}) -> {var_data['value']}\n")
         
         if "expression" in var_data:
             # the below call mutates var_data["value"]...
@@ -626,9 +628,9 @@ class Jinja(Bmi):
         np.ndarray
             Values at indices.
         """
-        var_data = self._get_var_data(var_name)
-        v = var_data["value"]
+        v = self.get_value_ptr(var_name)
         dest[:] = v[np.unravel_index(indices, v.shape)]
+
         return
 
 
