@@ -572,12 +572,16 @@ class Jinja(Bmi):
             return
 
         var_data = self._get_var_data(var_name)
-        values = values.reshape(var_data["value"].shape) #should be a no-op if the shapes are the same?
         if "value" not in var_data:
             #var_data["value"] = values.copy()
             grid_data = self._get_grid_data(var_data["bmi_meta"].grid)
             var_data["value"] = np.zeros(grid_data.shape)
-        #else:
+
+        values = np.atleast_1d(values) #mainly for non-framework use, e.g. notebooks.
+        try:
+            values = values.reshape(var_data["value"].shape) #should be a no-op if the shapes are the same?
+        except:
+            pass # This likewise should happen almost never in framework use.
         var_data["value"][:] = values
 
     #------------------------------------------------------------ 
