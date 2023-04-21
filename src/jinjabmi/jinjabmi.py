@@ -355,6 +355,19 @@ class Jinja(Bmi):
         return False
     
 
+    #-------------------------------------------------------------------
+    def _get_value(self, var_name: str) -> np.ndarray:
+        var_data = self._get_var_data(var_name)
+        #with open("jinjabmi.log", "a") as f:
+        #    f.write(f"  _get_value({var_name}) -> {var_data['value']}\n")
+        
+        if "expression" in var_data:
+            # the below call mutates var_data["value"]...
+            self._evaluate_var_expression(var_name)
+        
+        #return self._vars[var_name]["value"]
+        return var_data["value"]
+    
     #------------------------------------------------------------
     #------------------------------------------------------------
     # BMI: Model Control Functions
@@ -464,7 +477,7 @@ class Jinja(Bmi):
         array_like
             Copy of values.
         """
-        dest[:] = self.get_value_ptr(var_name).flatten()
+        dest[:] = self._get_value(var_name).flatten()
         return
 
     #-------------------------------------------------------------------
@@ -479,16 +492,7 @@ class Jinja(Bmi):
         array_like
             Value array.
         """
-        var_data = self._get_var_data(var_name)
-        #with open("jinjabmi.log", "a") as f:
-        #    f.write(f"  get_value_ptr({var_name}) -> {var_data['value']}\n")
-        
-        if "expression" in var_data:
-            # the below call mutates var_data["value"]...
-            self._evaluate_var_expression(var_name)
-        
-        #return self._vars[var_name]["value"]
-        return var_data["value"]
+        return self._get_value(var_name).ravel()
     
     #-------------------------------------------------------------------
     #-------------------------------------------------------------------
@@ -568,6 +572,7 @@ class Jinja(Bmi):
             return
 
         var_data = self._get_var_data(var_name)
+        values = values.reshape(var_data["value"].shape) #should be a no-op if the shapes are the same?
         if "value" not in var_data:
             #var_data["value"] = values.copy()
             grid_data = self._get_grid_data(var_data["bmi_meta"].grid)
@@ -628,7 +633,7 @@ class Jinja(Bmi):
         np.ndarray
             Values at indices.
         """
-        v = self.get_value_ptr(var_name)
+        v = self._get_value(var_name)
         dest[:] = v[np.unravel_index(indices, v.shape)]
 
         return
