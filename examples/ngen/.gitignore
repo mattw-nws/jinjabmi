@@ -1,0 +1,5 @@
+# in case ngen is run in this directory
+*.csv
+*.parquet
+*.h5
+*.nc*

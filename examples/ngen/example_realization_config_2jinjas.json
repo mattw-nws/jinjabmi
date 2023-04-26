@@ -1,0 +1,54 @@
+{
+    "global": {
+        "formulations": [
+            {
+                "name": "bmi_multi",
+                "params": {
+                    "model_type_name": "bmi_jinja_source",
+                    "forcing_file": "",
+                    "init_config": "",
+                    "allow_exceed_end_time": true,
+                    "main_output_variable": "prg_mean",
+                    "modules": [
+                        {
+                            "name": "bmi_python",
+                            "params": {
+                                "model_type_name": "jinjabmi",
+                                "python_type": "jinjabmi.Jinja",
+                                "init_config": "./jinja_grid_source.yml",
+                                "allow_exceed_end_time": true,
+                                "main_output_variable": "dummy_output_scalar",
+                                "uses_forcing_file": false
+                            }
+                        },
+                        {
+                            "name": "bmi_python",
+                            "params": {
+                                "model_type_name": "jinjabmi",
+                                "python_type": "jinjabmi.Jinja",
+                                "init_config": "./jinja_grid_to_scalars.yml",
+                                "allow_exceed_end_time": true,
+                                "main_output_variable": "prg_mean",
+                                "uses_forcing_file": false,
+                                "variables_names_map": {
+                                    "precip_rate_grid_in": "precip_rate_grid"
+                                }
+                            }
+                        }
+                    ],
+                    "uses_forcing_file": false
+                }
+            }
+        ],
+        "forcing": {
+            "file_pattern": ".*{{id}}.*..csv",
+            "path": "./data/forcing/",
+            "provider": "CsvPerFeature"
+        }
+    },
+    "time": {
+        "start_time": "2015-12-01 00:00:00",
+        "end_time": "2015-12-30 23:00:00",
+        "output_interval": 3600
+    }
+}
